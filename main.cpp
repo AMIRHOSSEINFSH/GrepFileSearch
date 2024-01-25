@@ -5,6 +5,7 @@
 #include <cstring>
 #include <vector>
 #include <sys/wait.h>
+#include <fstream>
 
 #define MAX_LENGTH 1024
 using namespace std;
@@ -139,13 +140,41 @@ void startIterationProcessFrom(const string& path,int iteration) {
 }
 
 void searchForResult(const string& path) {
-    //use itWord...
-    //appendThreadResult
-    //start Searching for Result
-    //todo write to pipeline ?
-    itWord;
-    //strcat(arr,"fdbsjod");
-    increaseCounter();
+    std::ifstream file;
+    std::string line;
+    int lineCount = 0;
+
+
+    file.open(path.c_str());
+    if (!file.is_open()) {
+        std::cerr << "Cannot open file: " << path << std::endl;
+        return;
+    }
+
+    // Read lines from file
+    while (std::getline(file, line)) {
+        // Increment the current line count
+        ++lineCount;
+
+        // Find the word in the current line
+        std::size_t pos = line.find(itWord);
+        while (pos != std::string::npos) {
+            // Word found
+            std::string result = path + ':'+ std::to_string(lineCount) + ':' + std::to_string(pos+1) + "\n";
+            // Copy result string to resultChar array
+            char resultChar[MAX_LENGTH];
+            strcpy(resultChar, result.c_str());
+
+            appendThreadResult(resultChar);
+            increaseCounter();
+            // Attempt to find next occurrence of the word
+            pos = line.find(itWord, pos + itWord.length());
+        }
+    }
+
+    file.close();
+    
+    std::cout << arr  << std::endl;
 }
 
 void increaseCounter() {
