@@ -181,15 +181,16 @@ void startIterationProcessFrom(const string &path, int parentWritePort) {
     int *pipes[mProcessList.size()];
 
     for (int i = 0; i < mProcessList.size(); ++i) {
-        processes[i] = fork();
         int fd[2];
-        pipes[i] = fd;
         if (pipe(fd) < 0) {
             perror("Error Creating Pipe");
         }
-
+        pipes[i] = fd;
+        //close(fd[1]);
+        processes[i] = fork();
         if (processes[i] == 0) {
             //Child Process
+            close(fd[0]);
             startIterationProcessFrom(mProcessList[i], pipes[i][1]);
             exit(0);
         } else {
@@ -225,7 +226,6 @@ void startIterationProcessFrom(const string &path, int parentWritePort) {
     }
 
     if (parentWritePort != INVALID_WRITE_PORT) {
-        appendThreadResult("Amir");
         std::cout << "Writing Result of " << arr << " from path: " << path << "\n" << std::endl;
         std::cout << "parent write port :" << parentWritePort << std::endl;
         if (write(parentWritePort, arr, sizeof(char) * MAX_LENGTH) == -1) {
@@ -243,6 +243,7 @@ void readProcessThreadResult(int readPort) {
         perror("Error Creating Processes");
         return;
     }
+    close(readPort);
     appendThreadResult(childResultData);
     std::cout << "read " << childResultData << " on Port: " << readPort << "\n" << std::endl;
 }
@@ -252,6 +253,7 @@ void searchForResult(const string &path) {
     //appendThreadResult
     //start Searching for Result
     //appendThreadResult("Amir");
+    appendThreadResult("Amir");
     std::cout << "file path " << path << std::endl;
     increaseCounter();
 }
