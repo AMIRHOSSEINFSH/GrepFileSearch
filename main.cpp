@@ -13,6 +13,8 @@
 #define INVALID_WRITE_PORT -1001
 using namespace std;
 
+void incrementCounter(int count = 1);
+
 void isInputValid(const string &path, const string &word);
 
 void startIterationProcessFrom(const string &path, int parentWritePort);
@@ -37,16 +39,22 @@ void appendThreadResult(char newResult[]) {
     strcat(arr, newResult);
 }
 
+void incrementCounter(int count) {
+    pthread_mutex_lock(&mutex);
+    counter+=count;
+    pthread_mutex_unlock(&mutex);
+}
+
 
 int main(int argc, char *argv[]) {
     pthread_mutex_init(&mutex, NULL);
-    if (argc == 1) {
+    //if (argc == 1) {
         //Open Socket
-        openConnection();
-    } else {
+      //  openConnection();
+   // } else {
 
         std::string path = "/home/amirhossein/Desktop/osProject/testFolder";//argv[argc - 2];
-        std::string word = "a";
+        std::string word = "magna";
         //argv[argc - 1];
         isInputValid(path, word);
         itWord = word;
@@ -57,7 +65,7 @@ int main(int argc, char *argv[]) {
         std::cout << "Final Result is :" << arr << std::endl;
 
         std::cout << counter << std::endl;
-    }
+  //  }
 
 
     return 0;
@@ -177,8 +185,9 @@ void startIterationProcessFrom(const string &path, int parentWritePort) {
     closedir(dir);
 
     pthread_t threads[mThreadList.size()];
-    pthread_t readProcessThreads[mProcessList.size()];
     pid_t processes[mProcessList.size()];
+    pthread_t readProcessThreads[mProcessList.size()];
+
     int *pipes[mProcessList.size()];
 
     for (int i = 0; i < mProcessList.size(); ++i) {
@@ -187,7 +196,6 @@ void startIterationProcessFrom(const string &path, int parentWritePort) {
             perror("Error Creating Pipe");
         }
         pipes[i] = fd;
-        //close(fd[1]);
         processes[i] = fork();
         if (processes[i] == 0) {
             //Child Process
@@ -202,15 +210,14 @@ void startIterationProcessFrom(const string &path, int parentWritePort) {
         }
     }
 
-
-    for (int i = 0; i < mProcessList.size(); i++) {
-        waitpid(processes[i], nullptr, 0);
-    }
-
     for (int i = 0; i < mThreadList.size(); ++i) {
         pthread_create(&threads[i], nullptr, reinterpret_cast<void *(*)(void *)>(&searchForResult),
                        (void *) &mThreadList[i]);
         std::cout << "File with Path: " + mThreadList[i] + "\n" << std::endl;
+    }
+
+    for (int i = 0; i < mProcessList.size(); i++) {
+        waitpid(processes[i], nullptr, 0);
     }
 
     // Wait for threads to finish
@@ -219,12 +226,14 @@ void startIterationProcessFrom(const string &path, int parentWritePort) {
     }
 
 
-    //TODO Problem Here ... (seems like a deadlock)
+
     std::cout << "process Id: " << getpid() << " is waiting for path: " << path << " process list size: "
               << mProcessList.size() << "\n" << std::endl;
     for (int i = 0; i < mProcessList.size(); i++) {
         pthread_join(readProcessThreads[i], nullptr);
     }
+
+    //Ensure child process and files are Done!
 
     if (parentWritePort != INVALID_WRITE_PORT) {
         std::cout << "Writing Result of " << arr << " from path: " << path << "\n" << std::endl;
@@ -233,18 +242,29 @@ void startIterationProcessFrom(const string &path, int parentWritePort) {
             std::cout << "Write Port Error path is: " + path + "\n" << std::endl;
             perror("Error in Write port");
         }
+        if (write(parentWritePort, &counter, sizeof(int)) == -1) {
+            std::cout << "Write Port Error path is: " + path + "\n" << std::endl;
+            perror("Error in Write port");
+        }
         close(parentWritePort);
     }
 }
 
+//append child process result
 void readProcessThreadResult(int readPort) {
     char childResultData[MAX_LENGTH];
+    int mCounter;
     std::cout << "Read port :" << readPort << std::endl;
     if (read(readPort, childResultData, sizeof(char) * MAX_LENGTH) == -1) {
         perror("Error Creating Processes");
         return;
     }
+    if (read(readPort, &mCounter, sizeof(int)) == -1) {
+        perror("Error Creating Processes");
+        return;
+    }
     close(readPort);
+    incrementCounter(mCounter);
     appendThreadResult(childResultData);
     std::cout << "read " << childResultData << " on Port: " << readPort << "\n" << std::endl;
 }
@@ -276,7 +296,7 @@ void searchForResult(const string& path) {
             strcpy(resultChar, result.c_str());
 
             appendThreadResult(resultChar);
-            increaseCounter();
+            incrementCounter(1);
             // Attempt to find next occurrence of the word
             pos = line.find(itWord, pos + itWord.length());
         }
@@ -287,8 +307,4 @@ void searchForResult(const string& path) {
     std::cout << arr  << std::endl;
 }
 
-void increaseCounter() {
-    pthread_mutex_lock(&mutex);
-    counter++;
-    pthread_mutex_unlock(&mutex);
-}
+
