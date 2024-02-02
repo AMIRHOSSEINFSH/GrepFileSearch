@@ -1,0 +1,27 @@
+# ninja log v5
+13	1454	1706901426550339924	Grep_autogen/timestamp	8f85c25226898bd9
+13	1454	1706901426550339924	Grep_autogen/mocs_compilation.cpp	8f85c25226898bd9
+13	1454	1706901426550339924	/home/narges/Documents/UI/build-Grep-Desktop_Qt_6_6_1_GCC_64bit-Debug/Grep_autogen/timestamp	8f85c25226898bd9
+13	1454	1706901426550339924	/home/narges/Documents/UI/build-Grep-Desktop_Qt_6_6_1_GCC_64bit-Debug/Grep_autogen/mocs_compilation.cpp	8f85c25226898bd9
+1454	10169	1706901435310293278	CMakeFiles/Grep.dir/Grep_autogen/mocs_compilation.cpp.o	4f81a37cc274a7c3
+1455	10199	1706901435338293129	CMakeFiles/Grep.dir/main.cpp.o	6f221893f0e8aa53
+2	254	1706901935360165362	Grep_autogen/timestamp	8f85c25226898bd9
+2	254	1706901935360165362	Grep_autogen/mocs_compilation.cpp	8f85c25226898bd9
+2	254	1706901935360165362	/home/narges/Documents/UI/build-Grep-Desktop_Qt_6_6_1_GCC_64bit-Debug/Grep_autogen/timestamp	8f85c25226898bd9
+2	254	1706901935360165362	/home/narges/Documents/UI/build-Grep-Desktop_Qt_6_6_1_GCC_64bit-Debug/Grep_autogen/mocs_compilation.cpp	8f85c25226898bd9
+2	390	1706902522842367743	Grep_autogen/timestamp	8f85c25226898bd9
+2	390	1706902522842367743	Grep_autogen/mocs_compilation.cpp	8f85c25226898bd9
+2	390	1706902522842367743	/home/narges/Documents/UI/build-Grep-Desktop_Qt_6_6_1_GCC_64bit-Debug/Grep_autogen/timestamp	8f85c25226898bd9
+2	390	1706902522842367743	/home/narges/Documents/UI/build-Grep-Desktop_Qt_6_6_1_GCC_64bit-Debug/Grep_autogen/mocs_compilation.cpp	8f85c25226898bd9
+2	217	1706902583630201223	Grep_autogen/timestamp	8f85c25226898bd9
+2	217	1706902583630201223	Grep_autogen/mocs_compilation.cpp	8f85c25226898bd9
+2	217	1706902583630201223	/home/narges/Documents/UI/build-Grep-Desktop_Qt_6_6_1_GCC_64bit-Debug/Grep_autogen/timestamp	8f85c25226898bd9
+2	217	1706902583630201223	/home/narges/Documents/UI/build-Grep-Desktop_Qt_6_6_1_GCC_64bit-Debug/Grep_autogen/mocs_compilation.cpp	8f85c25226898bd9
+23	1667	1706902665029981718	Grep_autogen/timestamp	8f85c25226898bd9
+23	1667	1706902665029981718	Grep_autogen/mocs_compilation.cpp	8f85c25226898bd9
+23	1667	1706902665029981718	/home/narges/Documents/UI/build-Grep-Desktop_Qt_6_6_1_GCC_64bit-Debug/Grep_autogen/timestamp	8f85c25226898bd9
+23	1667	1706902665029981718	/home/narges/Documents/UI/build-Grep-Desktop_Qt_6_6_1_GCC_64bit-Debug/Grep_autogen/mocs_compilation.cpp	8f85c25226898bd9
+1667	9392	1706902672741961092	CMakeFiles/Grep.dir/Grep_autogen/mocs_compilation.cpp.o	4f81a37cc274a7c3
+1667	9404	1706902672749961072	CMakeFiles/Grep.dir/main.cpp.o	6f221893f0e8aa53
+9399	14556	1706902677925947245	CMakeFiles/Grep.dir/grepui.cpp.o	4a2624a399900985
+14557	16283	1706902679645942655	Grep	6533b87d49c0d136
