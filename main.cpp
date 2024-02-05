@@ -6,11 +6,85 @@
 #include <vector>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 #include <fstream>
+#include <functional>
+#include <future>
+#include <thread>
+#include <queue>
+#include <mutex>
 
 #define MAX_LENGTH 1024
 #define INVALID_WRITE_PORT -1001
+#define THREAD_POOL_SIZE 2
 using namespace std;
+
+class ThreadPool {
+public:
+    using Task = std::function<void()>;
+
+    explicit ThreadPool(std::size_t numThreads) {
+        start(numThreads);
+    }
+
+    ~ThreadPool() {
+        stop();
+    }
+
+    template<class T>
+    auto enqueue(T task) -> std::future<decltype(task())> {
+        auto wrapper = std::make_shared<std::packaged_task<decltype(task())()>>(std::move(task));
+
+        {
+            std::unique_lock<std::mutex> lock{mEventMutex};
+            mTasks.emplace([=] {
+                (*wrapper)();
+            });
+        }
+
+        mEventVar.notify_one();
+        return wrapper->get_future();
+    }
+
+private:
+    std::vector<std::thread> mThreads;
+    std::condition_variable mEventVar;
+    std::mutex mEventMutex;
+    bool mStopping = false;
+    std::queue<Task> mTasks;
+
+    void start(std::size_t numThreads) {
+        for (auto i = 0u; i < numThreads; ++i) {
+            mThreads.emplace_back([=] {
+                while (true) {
+                    Task task;
+                    {
+                        std::unique_lock<std::mutex> lock{mEventMutex};
+                        mEventVar.wait(lock, [=] { return mStopping || !mTasks.empty(); });
+                        if (mStopping && mTasks.empty())
+                            break;
+                        task = std::move(mTasks.front());
+                        mTasks.pop();
+                    }
+
+                    task();
+                }
+            });
+        }
+    }
+
+    void stop() noexcept {
+        {
+            std::unique_lock<std::mutex> lock{mEventMutex};
+            mStopping = true;
+        }
+
+        mEventVar.notify_all();
+
+        for (auto &thread: mThreads)
+            thread.join();
+    }
+};
 
 void incrementCounter(int count = 1);
 
@@ -24,15 +98,11 @@ void searchForResult(const string &path);
 
 void readProcessThreadResult(int readPort);
 
-void increaseCounter();
-
-int openConnection();
-
 std::string itWord;
 
 int counter = 0;
 
-pthread_mutex_t mutex;
+pthread_mutex_t mmutex;
 
 char arr[MAX_LENGTH];
 
@@ -41,14 +111,14 @@ void appendThreadResult(char newResult[]) {
 }
 
 void incrementCounter(int count) {
-    pthread_mutex_lock(&mutex);
-    counter+=count;
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_lock(&mmutex);
+    counter += count;
+    pthread_mutex_unlock(&mmutex);
 }
 
 
 int main(int argc, char *argv[]) {
-    pthread_mutex_init(&mutex, NULL);
+    pthread_mutex_init(&mmutex, NULL);
         std::string path = argv[argc - 2];
         std::string word = argv[argc - 1];
         isInputValid(path, word);
@@ -101,6 +171,8 @@ void isInputValid(const string &path, const string &word) {
 }
 
 void startIterationProcessFrom(const string &path, int parentWritePort) {
+    ThreadPool pool{THREAD_POOL_SIZE};
+    std::vector<std::future<void>> futures;
     std::cout << "Start Search in  " + path + "\n" << std::endl;
     // Declare and initialize a vector of integers
     std::vector<std::string> mProcessList;
@@ -136,7 +208,6 @@ void startIterationProcessFrom(const string &path, int parentWritePort) {
     // Close the directory
     closedir(dir);
 
-    pthread_t threads[mThreadList.size()];
     pid_t processes[mProcessList.size()];
     pthread_t readProcessThreads[mProcessList.size()];
 
@@ -155,7 +226,6 @@ void startIterationProcessFrom(const string &path, int parentWritePort) {
             startIterationProcessFrom(mProcessList[i], pipes[i][1]);
             exit(0);
         } else {
-            std::cout << "read: " << pipes[i][0] << " Write: " << pipes[i][1] << "\n" << std::endl;
             pthread_create(&readProcessThreads[i], nullptr,
                            reinterpret_cast<void *(*)(void *)>(readProcessThreadResult),
                            reinterpret_cast<void *>(pipes[i][0]));
@@ -163,9 +233,7 @@ void startIterationProcessFrom(const string &path, int parentWritePort) {
     }
 
     for (int i = 0; i < mThreadList.size(); ++i) {
-        pthread_create(&threads[i], nullptr, reinterpret_cast<void *(*)(void *)>(&searchForResult),
-                       (void *) &mThreadList[i]);
-        std::cout << "File with Path: " + mThreadList[i] + "\n" << std::endl;
+        futures.push_back(pool.enqueue(std::bind(searchForResult, mThreadList[i])));
     }
 
     for (int i = 0; i < mProcessList.size(); i++) {
@@ -173,14 +241,10 @@ void startIterationProcessFrom(const string &path, int parentWritePort) {
     }
 
     // Wait for threads to finish
-    for (int i = 0; i < mThreadList.size(); ++i) {
-        pthread_join(threads[i], nullptr);
+    for (auto &future: futures) {
+        future.wait();  // This will wait for each task to complete.
     }
 
-
-
-    std::cout << "process Id: " << getpid() << " is waiting for path: " << path << " process list size: "
-              << mProcessList.size() << "\n" << std::endl;
     for (int i = 0; i < mProcessList.size(); i++) {
         pthread_join(readProcessThreads[i], nullptr);
     }
@@ -188,8 +252,6 @@ void startIterationProcessFrom(const string &path, int parentWritePort) {
     //Ensure child process and files are Done!
 
     if (parentWritePort != INVALID_WRITE_PORT) {
-        std::cout << "Writing Result of " << arr << " from path: " << path << "\n" << std::endl;
-        std::cout << "parent write port :" << parentWritePort << std::endl;
         if (write(parentWritePort, arr, sizeof(char) * MAX_LENGTH) == -1) {
             std::cout << "Write Port Error path is: " + path + "\n" << std::endl;
             perror("Error in Write port");
@@ -206,7 +268,6 @@ void startIterationProcessFrom(const string &path, int parentWritePort) {
 void readProcessThreadResult(int readPort) {
     char childResultData[MAX_LENGTH];
     int mCounter;
-    std::cout << "Read port :" << readPort << std::endl;
     if (read(readPort, childResultData, sizeof(char) * MAX_LENGTH) == -1) {
         perror("Error Creating Processes");
         return;
@@ -218,10 +279,12 @@ void readProcessThreadResult(int readPort) {
     close(readPort);
     incrementCounter(mCounter);
     appendThreadResult(childResultData);
-    std::cout << "read " << childResultData << " on Port: " << readPort << "\n" << std::endl;
 }
 
-void searchForResult(const string& path) {
+//append child process result
+void searchForResult(const string &path) {
+    auto start_time = std::chrono::high_resolution_clock::now();
+
     std::ifstream file;
     std::string line;
     int lineCount = 0;
@@ -242,7 +305,7 @@ void searchForResult(const string& path) {
         std::size_t pos = line.find(itWord);
         while (pos != std::string::npos) {
             // Word found
-            std::string result = path + ':'+ std::to_string(lineCount) + ':' + std::to_string(pos+1) + "\n";
+            std::string result = path + ':' + std::to_string(lineCount) + ':' + std::to_string(pos + 1) + "\n";
             // Copy result string to resultChar array
             char resultChar[MAX_LENGTH];
             strcpy(resultChar, result.c_str());
@@ -256,7 +319,13 @@ void searchForResult(const string& path) {
 
     file.close();
 
-    std::cout << arr  << std::endl;
+    std::cout << arr << std::endl;
+
+    auto end_time = std::chrono::high_resolution_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+    std::cout << "File : " << path << " Done! TimeSpent: " << duration.count() << " microseconds" << std::endl;
+
 }
 
 
