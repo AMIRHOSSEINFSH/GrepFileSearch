@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <fstream>
+#include <regex>
 
 #define MAX_LENGTH 1024
 #define INVALID_WRITE_PORT -1001
@@ -53,9 +54,8 @@ int main(int argc, char *argv[]) {
       //  openConnection();
    // } else {
 
-        std::string path = "/home/amirhossein/Desktop/osProject/testFolder";//argv[argc - 2];
-        std::string word = "magna";
-        //argv[argc - 1];
+        std::string path = argv[argc - 2];//"/home/amirhossein/Desktop/osProject/testFolder";
+        std::string word = argv[argc - 1];//"magna";
         isInputValid(path, word);
         itWord = word;
 
@@ -281,24 +281,26 @@ void searchForResult(const string& path) {
         return;
     }
 
+    std::regex pattern(itWord);
     // Read lines from file
     while (std::getline(file, line)) {
         // Increment the current line count
         ++lineCount;
+        std::sregex_iterator next(line.begin(), line.end(),pattern);
+        std::sregex_iterator end;
 
-        // Find the word in the current line
-        std::size_t pos = line.find(itWord);
-        while (pos != std::string::npos) {
-            // Word found
-            std::string result = path + ':'+ std::to_string(lineCount) + ':' + std::to_string(pos+1) + "\n";
+        while (next != end) {
+            // Find the word in the current line
+            std::smatch match = *next;
+
+            std::string result = path + ':'+ std::to_string(lineCount) + ':' + std::to_string(match.position()) + "\n";
             // Copy result string to resultChar array
             char resultChar[MAX_LENGTH];
             strcpy(resultChar, result.c_str());
 
             appendThreadResult(resultChar);
             incrementCounter(1);
-            // Attempt to find next occurrence of the word
-            pos = line.find(itWord, pos + itWord.length());
+            next++;
         }
     }
 
