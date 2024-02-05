@@ -1,8 +1,0 @@
-/home/amirhossein/Desktop/osProject/UI/Grep/cmake-build-debug/CMakeFiles/Grep.dir
-/home/amirhossein/Desktop/osProject/UI/Grep/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/amirhossein/Desktop/osProject/UI/Grep/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/amirhossein/Desktop/osProject/UI/Grep/cmake-build-debug/CMakeFiles/list_install_components.dir
-/home/amirhossein/Desktop/osProject/UI/Grep/cmake-build-debug/CMakeFiles/install.dir
-/home/amirhossein/Desktop/osProject/UI/Grep/cmake-build-debug/CMakeFiles/install/local.dir
-/home/amirhossein/Desktop/osProject/UI/Grep/cmake-build-debug/CMakeFiles/install/strip.dir
-/home/amirhossein/Desktop/osProject/UI/Grep/cmake-build-debug/CMakeFiles/Grep_autogen.dir

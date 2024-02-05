@@ -6,7 +6,6 @@
 #include <vector>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <arpa/inet.h>
 #include <fstream>
 
 #define MAX_LENGTH 1024
@@ -14,6 +13,8 @@
 using namespace std;
 
 void incrementCounter(int count = 1);
+
+void writeResult();
 
 void isInputValid(const string &path, const string &word);
 
@@ -48,98 +49,49 @@ void incrementCounter(int count) {
 
 int main(int argc, char *argv[]) {
     pthread_mutex_init(&mutex, NULL);
-    //if (argc == 1) {
-        //Open Socket
-      //  openConnection();
-   // } else {
-
-        std::string path = "/home/amirhossein/Desktop/osProject/testFolder";//argv[argc - 2];
-        std::string word = "magna";
-        //argv[argc - 1];
+        std::string path = argv[argc - 2];
+        std::string word = argv[argc - 1];
         isInputValid(path, word);
         itWord = word;
 
+	std::cout << "Path " <<  path << std::endl;
+	std::cout << "word " <<  word << std::endl;
         std::cout << "main Process :" << getpid() << std::endl;
         startIterationProcessFrom(path, INVALID_WRITE_PORT);
         //format the result
+        writeResult();
         std::cout << "Final Result is :" << arr << std::endl;
 
         std::cout << counter << std::endl;
-  //  }
-
 
     return 0;
 }
 
-int openConnection() {
-    int serverSocket, clientSocket;
-    struct sockaddr_in serverAddress, clientAddress;
+void writeResult() {
+    const char* fileName = "output.txt";
 
-    // Create a socket
-    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket == -1) {
-        std::cerr << "Error creating socket" << std::endl;
-        return -1;
+    // Open a file for writing, create if not exists, truncate existing content
+    std::ofstream outFile(fileName, std::ios::out | std::ios::trunc);
+
+    // Obtain and print the absolute path of the output file
+    std::filesystem::path absolutePath = std::filesystem::absolute(fileName);
+    std::cout << "Absolute path of outFile: " << absolutePath << std::endl;
+    if (!outFile.is_open()) {
+        std::cerr << "Error opening file for writing." << std::endl;
+        return;
     }
 
-    // Set up server address
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(2121); // Port 2121
-    serverAddress.sin_addr.s_addr = inet_addr("127.0.0.1"); // IP address 127.0.0.1
+    // Write char* to file
+    outFile << arr << std::endl;
+    outFile << '*' << std::endl;
+    // Write int to file
+    outFile << counter << std::endl;
 
-    // Bind the socket to the address
-    if (bind(serverSocket, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) == -1) {
-        std::cerr << "Error binding socket" << std::endl;
-        return -1;
-    }
+    // Close the file
+    outFile.close();
 
-    // Listen for incoming connections
-    if (listen(serverSocket, 1) == -1) {
-        std::cerr << "Error listening for connections" << std::endl;
-        return -1;
-    }
-
-    std::cout << "Server listening on 127.0.0.1:2121..." << std::endl;
-
-    // Accept connections from clients
-    socklen_t clientAddressLength = sizeof(clientAddress);
-    clientSocket = accept(serverSocket, (struct sockaddr *) &clientAddress, &clientAddressLength);
-    if (clientSocket == -1) {
-        std::cerr << "Error accepting connection" << std::endl;
-        return -1;
-    }
-
-    std::cout << "Connection accepted from " << inet_ntoa(clientAddress.sin_addr) << ":"
-              << ntohs(clientAddress.sin_port) << std::endl;
-
-    // Read messages from the client
-
-    char path[100];
-    char word[100];
-    if (recv(clientSocket, path, sizeof(path), 0) == -1) {
-        perror("Error receiving first array");
-        close(clientSocket);
-        close(serverSocket);
-        return -1;
-    }
-
-    if (recv(clientSocket, word, sizeof(word), 0) == -1) {
-        perror("Error receiving first array");
-        close(clientSocket);
-        close(serverSocket);
-        return -1;
-    }
-
-    itWord = word;
-    std::cout<<"path: "<<path << " word: "<< word<<std::endl;
-    startIterationProcessFrom(path, INVALID_WRITE_PORT);
-
-    // Close the sockets
-    close(clientSocket);
-    close(serverSocket);
+    std::cout << "Data written to file successfully." << std::endl;
 }
-
-
 //Validating input path and word
 void isInputValid(const string &path, const string &word) {
     if (!std::filesystem::is_directory(path) || word.empty()) {

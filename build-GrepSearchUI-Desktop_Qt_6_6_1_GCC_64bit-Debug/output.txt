@@ -1,0 +1,4 @@
+/home/amirhossein/Desktop/osProject/testFolder/as.txt:1:1
+
+*
+1
